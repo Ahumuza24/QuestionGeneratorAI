@@ -1,0 +1,195 @@
+{% extends "base.html" %}
+
+{% block title %}Manual Training Examples{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1>Manual Training Examples</h1>
+            <p class="lead">Create custom training examples to improve the question generator model.</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{{ url_for('questions.train_model') }}" class="btn btn-primary">
+                <i class="fas fa-brain me-2"></i>Return to Training
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-7">
+            <!-- Card for adding new examples -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Add New Training Example</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('questions.manual_training_examples', edit_file=current_file) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        
+                        <div class="mb-3">
+                            <label for="context" class="form-label">Context</label>
+                            <textarea class="form-control" id="context" name="context" rows="5" 
+                                      placeholder="Enter the context for the question...">{{ form.context.data or ''}}</textarea>
+                            {% if form.context.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.context.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">This is the text that will be used to generate and answer questions.</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="question" class="form-label">Question</label>
+                            <input type="text" class="form-control" id="question" name="question" 
+                                   placeholder="Enter your question..." value="{{ form.question.data or '' }}">
+                            {% if form.question.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.question.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">Make sure your question ends with a question mark.</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="answer" class="form-label">Answer</label>
+                            <textarea class="form-control" id="answer" name="answer" rows="3" 
+                                      placeholder="Enter the answer...">{{ form.answer.data or '' }}</textarea>
+                            {% if form.answer.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.answer.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="question_type" class="form-label">Question Type</label>
+                            <select class="form-select" id="question_type" name="question_type">
+                                {% for value, label in form.question_type.choices %}
+                                    <option value="{{ value }}" {% if form.question_type.data == value %}selected{% endif %}>
+                                        {{ label }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-plus-circle me-2"></i>Add Example
+                        </button>
+                        
+                        {% if current_file %}
+                            <span class="ms-2 text-muted">
+                                Adding to: <strong>{{ current_file }}</strong>
+                            </span>
+                        {% else %}
+                            <span class="ms-2 text-muted">
+                                Creating a new file
+                            </span>
+                        {% endif %}
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Card for existing examples in the current file -->
+            <div class="card">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">Current Examples</h4>
+                    <span class="badge bg-light text-dark">{{ examples|length }} examples</span>
+                </div>
+                <div class="card-body">
+                    {% if examples %}
+                        <div class="list-group">
+                            {% for example in examples %}
+                                <div class="list-group-item">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <span class="badge bg-primary">Example #{{ loop.index }}</span>
+                                        <span class="badge bg-secondary">{{ example.type }}</span>
+                                    </div>
+                                    
+                                    <h5 class="mb-1">{{ example.question }}</h5>
+                                    <p class="mb-1"><strong>Answer:</strong> {{ example.answer }}</p>
+                                    
+                                    <div class="mt-2">
+                                        <p class="mb-0 text-muted small">
+                                            <strong>Context:</strong> {{ example.context[:100] }}{% if example.context|length > 100 %}...{% endif %}
+                                        </p>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">
+                            <p class="mb-0">No examples in the current file yet. Add an example using the form above.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-5">
+            <!-- Card for selecting existing files -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Existing Training Files</h4>
+                </div>
+                <div class="card-body">
+                    {% if existing_files %}
+                        <p>Select a file to edit:</p>
+                        <div class="list-group">
+                            {% for file in existing_files %}
+                                <a href="{{ url_for('questions.manual_training_examples', edit_file=file) }}" 
+                                   class="list-group-item list-group-item-action {% if current_file == file %}active{% endif %}">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h5 class="mb-1">{{ file }}</h5>
+                                    </div>
+                                    <small class="text-muted">Click to edit this file</small>
+                                </a>
+                            {% endfor %}
+                        </div>
+                        
+                        <div class="mt-3">
+                            <a href="{{ url_for('questions.manual_training_examples') }}" class="btn btn-outline-primary">
+                                <i class="fas fa-plus-circle me-2"></i>Create New File
+                            </a>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">
+                            <p class="mb-0">No training files available yet. Create one by adding examples using the form.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Card for instructions -->
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">How This Works</h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <h5><i class="fas fa-info-circle me-2"></i>About Manual Examples</h5>
+                        <p>Creating high-quality manual examples helps the model learn your preferred question style and format.</p>
+                    </div>
+                    
+                    <h5>Tips for Good Training Examples:</h5>
+                    <ul>
+                        <li>Use clear, concise context paragraphs</li>
+                        <li>Write questions that directly relate to the context</li>
+                        <li>Provide specific, accurate answers</li>
+                        <li>Mix different question types and complexity levels</li>
+                        <li>Create at least 5-10 examples per file for better results</li>
+                    </ul>
+                    
+                    <p>After creating examples, go to the <a href="{{ url_for('questions.train_model') }}">Training page</a> to train the model.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

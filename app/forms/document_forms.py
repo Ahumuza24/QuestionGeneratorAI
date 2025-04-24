@@ -1,6 +1,6 @@
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField, FileRequired, FileAllowed
-from wtforms import StringField, IntegerField, SelectField, SubmitField
+from wtforms import StringField, IntegerField, SelectField, SubmitField, TextAreaField
 from wtforms.validators import DataRequired, Length, NumberRange
 
 class DocumentUploadForm(FlaskForm):
@@ -39,4 +39,30 @@ class QuestionGenerationForm(FlaskForm):
         ('mixed', 'Mixed')
     ], default='medium')
     
-    submit = SubmitField('Generate Questions') 
+    submit = SubmitField('Generate Questions')
+
+class TrainingQuestionForm(FlaskForm):
+    """Form for manually creating training questions"""
+    context = TextAreaField('Context', validators=[
+        DataRequired(),
+        Length(min=10, max=2000, message='Context must be between 10 and 2000 characters')
+    ])
+    
+    question = StringField('Question', validators=[
+        DataRequired(),
+        Length(min=5, max=200, message='Question must be between 5 and 200 characters')
+    ])
+    
+    answer = TextAreaField('Answer', validators=[
+        DataRequired(),
+        Length(min=1, max=500, message='Answer must be between 1 and 500 characters')
+    ])
+    
+    question_type = SelectField('Question Type', validators=[
+        DataRequired()
+    ], choices=[
+        ('structured', 'Structured Question'),
+        ('multiple_choice', 'Multiple Choice')
+    ], default='structured')
+    
+    submit = SubmitField('Save Question') 

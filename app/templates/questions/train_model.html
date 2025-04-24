@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+
+{% block title %}Train Question Generator Model{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row mb-4">
+        <div class="col-md-7">
+            <h1>Train Question Generator Model</h1>
+            <p class="lead">Fine-tune the question generation model on your own question papers.</p>
+        </div>
+        <div class="col-md-5 text-end">
+            <a href="{{ url_for('questions.create_example_paper') }}" class="btn btn-primary me-2">
+                <i class="fas fa-plus-circle me-2"></i>Create Training Example
+            </a>
+            <a href="{{ url_for('questions.pdf_to_training') }}" class="btn btn-info me-2">
+                <i class="fas fa-file-pdf me-2"></i>Extract from PDF
+            </a>
+            <a href="{{ url_for('questions.manual_training_examples') }}" class="btn btn-secondary">
+                <i class="fas fa-edit me-2"></i>Manual Entry
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-7">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Upload Question Paper</h4>
+                </div>
+                <div class="card-body">
+                    <p>Upload a JSON file containing question examples to train the model. The file should contain a list of objects with <code>context</code>, <code>question</code>, and optionally <code>answer</code> fields.</p>
+                    
+                    <form action="{{ url_for('questions.train_model') }}" method="POST" enctype="multipart/form-data">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        
+                        <div class="mb-3">
+                            <label for="question_paper" class="form-label">Question Paper File (JSON format)</label>
+                            <input type="file" class="form-control" id="question_paper" name="question_paper" accept=".json" required>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="epochs" class="form-label">Training Epochs</label>
+                                    <input type="number" class="form-control" id="epochs" name="epochs" value="3" min="1" max="10">
+                                    <div class="form-text">Number of training epochs (1-10). More epochs = better results but longer training time.</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="batch_size" class="form-label">Batch Size</label>
+                                    <input type="number" class="form-control" id="batch_size" name="batch_size" value="8" min="1" max="16">
+                                    <div class="form-text">Batch size for training (1-16). Larger values use more memory.</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-upload me-2"></i>Upload and Train
+                        </button>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Example JSON Format</h4>
+                </div>
+                <div class="card-body">
+                    <pre class="bg-light p-3 rounded"><code>[
+  {
+    "context": "Artificial intelligence (AI) is intelligence demonstrated by machines.",
+    "question": "What is artificial intelligence?",
+    "answer": "Intelligence demonstrated by machines"
+  },
+  {
+    "context": "Machine learning is a subset of AI focused on data-based learning.",
+    "question": "What is machine learning focused on?",
+    "answer": "Data-based learning"
+  }
+]</code></pre>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-5">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Existing Training Files</h4>
+                </div>
+                <div class="card-body">
+                    {% if existing_files %}
+                        <p>You have {{ existing_files|length }} training files available.</p>
+                        <ul class="list-group">
+                            {% for file in existing_files %}
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    {{ file }}
+                                    <span class="badge bg-primary rounded-pill">JSON</span>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                        
+                        <form action="{{ url_for('questions.run_training') }}" method="POST" class="mt-3">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="epochs_existing" class="form-label">Training Epochs</label>
+                                        <input type="number" class="form-control" id="epochs_existing" name="epochs" value="3" min="1" max="10">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="batch_size_existing" class="form-label">Batch Size</label>
+                                        <input type="number" class="form-control" id="batch_size_existing" name="batch_size" value="8" min="1" max="16">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-success w-100">
+                                <i class="fas fa-brain me-2"></i>Train on All Existing Files
+                            </button>
+                        </form>
+                    {% else %}
+                        <div class="alert alert-info">
+                            <p class="mb-0">No training files available yet. Upload a file or create a training example from your generated questions.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Training Information</h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <h5><i class="fas fa-info-circle me-2"></i>About Model Training</h5>
+                        <p>Training the model allows it to learn from your example questions and adapt to your preferred style, format, and content focus.</p>
+                        <p class="mb-0"><strong>Note:</strong> Training may take several minutes depending on the number of examples and epochs.</p>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <h5>Benefits of Training:</h5>
+                        <ul>
+                            <li>Improved question quality and relevance</li>
+                            <li>Questions that match your preferred style and format</li>
+                            <li>Better adaptation to your specific domain knowledge</li>
+                            <li>More consistent question generation</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

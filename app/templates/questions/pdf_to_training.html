@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+
+{% block title %}Extract Questions from PDF{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1>Extract Training Examples from PDF</h1>
+            <p class="lead">Extract questions and answers from your existing PDF question papers.</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{{ url_for('questions.train_model') }}" class="btn btn-primary">
+                <i class="fas fa-brain me-2"></i>Return to Training
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-7">
+            <!-- Card for PDF upload -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Upload Question PDF</h4>
+                </div>
+                <div class="card-body">
+                    <p>Upload a PDF file containing questions and answers. The system will automatically extract them for training.</p>
+                    
+                    <form action="{{ url_for('questions.pdf_to_training') }}" method="POST" enctype="multipart/form-data">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        
+                        <div class="mb-3">
+                            <label for="pdf_file" class="form-label">Question Paper PDF File</label>
+                            <input type="file" class="form-control" id="pdf_file" name="pdf_file" accept=".pdf" required>
+                            <div class="form-text">Upload a PDF file containing questions and answers in a standard format.</div>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-upload me-2"></i>Upload and Extract
+                        </button>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Card for expected format -->
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Supported PDF Formats</h4>
+                </div>
+                <div class="card-body">
+                    <p>For best extraction results, your PDF should format questions in one of these ways:</p>
+                    
+                    <h5>Standard Question Format:</h5>
+                    <pre class="bg-light p-3 rounded"><code>1. What is artificial intelligence?
+Answer: Intelligence demonstrated by machines.
+
+2. What is machine learning focused on?
+Answer: Data-based learning.
+</code></pre>
+                    
+                    <h5>Multiple Choice Format:</h5>
+                    <pre class="bg-light p-3 rounded"><code>1. Which of the following best describes AI?
+A) Statistical algorithms
+B) Intelligence demonstrated by machines
+C) Computer hardware
+D) Internet protocols
+
+Answer: B
+</code></pre>
+                
+                    <div class="alert alert-info mt-3">
+                        <p class="mb-0"><i class="fas fa-info-circle me-2"></i>After extraction, you'll be able to review and edit the questions before using them for training.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-5">
+            <!-- Card explaining the process -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">How It Works</h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <h5><i class="fas fa-info-circle me-2"></i>PDF Extraction Process</h5>
+                        <p>This tool extracts questions and answers from your PDF files to create training examples.</p>
+                    </div>
+                    
+                    <ol>
+                        <li><strong>Upload:</strong> Upload your PDF question paper</li>
+                        <li><strong>Extract:</strong> The system parses questions and answers</li>
+                        <li><strong>Review:</strong> You'll be redirected to review the extracted questions</li>
+                        <li><strong>Edit:</strong> Make any necessary adjustments to the questions</li>
+                        <li><strong>Train:</strong> Use the examples to train the model</li>
+                    </ol>
+                    
+                    <div class="alert alert-warning">
+                        <p class="mb-0"><strong>Note:</strong> Extraction quality depends on the PDF format. If questions can't be extracted correctly, you can add them manually instead.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Card for alternative options -->
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Other Training Options</h4>
+                </div>
+                <div class="card-body">
+                    <p>There are multiple ways to create training examples:</p>
+                    
+                    <div class="list-group mb-3">
+                        <a href="{{ url_for('questions.manual_training_examples') }}" class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h5 class="mb-1">Manual Entry</h5>
+                                <small><i class="fas fa-edit"></i></small>
+                            </div>
+                            <p class="mb-1">Create examples by manually entering questions and answers</p>
+                        </a>
+                        <a href="{{ url_for('questions.create_example_paper') }}" class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h5 class="mb-1">From Generated Questions</h5>
+                                <small><i class="fas fa-file-export"></i></small>
+                            </div>
+                            <p class="mb-1">Convert previously generated questions into training examples</p>
+                        </a>
+                        <a href="{{ url_for('questions.train_model') }}" class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h5 class="mb-1">Upload JSON</h5>
+                                <small><i class="fas fa-upload"></i></small>
+                            </div>
+                            <p class="mb-1">Upload a pre-formatted JSON file with example questions</p>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

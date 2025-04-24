@@ -1,16 +1,37 @@
 import torch
 import re
 import random
+import os
+import json
 from nltk.tokenize import sent_tokenize
 from sklearn.feature_extraction.text import TfidfVectorizer
-from transformers import T5Tokenizer, AutoModelForSeq2SeqLM, pipeline
+from transformers import T5Tokenizer, AutoModelForSeq2SeqLM, pipeline, Trainer, TrainingArguments
+import numpy as np
+from torch.utils.data import Dataset, DataLoader
+from app.utils.document_processor import extract_text_from_pdf
 
 # Initialize tokenizer and model
+model_name = 'valhalla/t5-base-e2e-qg'
 tokenizer = T5Tokenizer.from_pretrained(
-    'valhalla/t5-base-e2e-qg',
+    model_name,
     model_max_length=512
 )
-model = AutoModelForSeq2SeqLM.from_pretrained('valhalla/t5-base-e2e-qg')
+model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
+
+# Define paths for saving fine-tuned models
+MODELS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'models')
+if not os.path.exists(MODELS_DIR):
+    os.makedirs(MODELS_DIR)
+
+FINE_TUNED_MODEL_PATH = os.path.join(MODELS_DIR, 'fine_tuned_question_generator')
+
+# Check if fine-tuned model exists and load it if available
+if os.path.exists(FINE_TUNED_MODEL_PATH):
+    try:
+        model = AutoModelForSeq2SeqLM.from_pretrained(FINE_TUNED_MODEL_PATH)
+        print(f"Loaded fine-tuned model from {FINE_TUNED_MODEL_PATH}")
+    except Exception as e:
+        print(f"Error loading fine-tuned model: {e}. Using base model instead.")
 
 # Check for CUDA availability
 device = 0 if torch.cuda.is_available() else -1
@@ -23,6 +44,166 @@ question_generator = pipeline(
     device=device
 )
 answer_generator = pipeline('question-answering', model='deepset/roberta-base-squad2', device=device)
+
+# Dataset class for fine-tuning
+class QuestionGenerationDataset(Dataset):
+    def __init__(self, examples, tokenizer, max_length=512):
+        self.examples = examples
+        self.tokenizer = tokenizer
+        self.max_length = max_length
+        
+    def __len__(self):
+        return len(self.examples)
+        
+    def __getitem__(self, idx):
+        example = self.examples[idx]
+        context = example["context"]
+        question = example["question"]
+        
+        # Format the input for question generation
+        input_text = f"generate question: {context}"
+        
+        # Tokenize input and target
+        input_encoding = self.tokenizer(
+            input_text,
+            max_length=self.max_length,
+            padding="max_length",
+            truncation=True,
+            return_tensors="pt"
+        )
+        
+        target_encoding = self.tokenizer(
+            question,
+            max_length=128,
+            padding="max_length",
+            truncation=True,
+            return_tensors="pt"
+        )
+        
+        input_ids = input_encoding["input_ids"].squeeze()
+        attention_mask = input_encoding["attention_mask"].squeeze()
+        labels = target_encoding["input_ids"].squeeze()
+        
+        # Replace padding tokens in labels with -100 so they're ignored in loss calculation
+        labels[labels == self.tokenizer.pad_token_id] = -100
+        
+        return {
+            "input_ids": input_ids,
+            "attention_mask": attention_mask,
+            "labels": labels
+        }
+
+def train_model_on_examples(examples, output_dir=FINE_TUNED_MODEL_PATH, epochs=3, batch_size=8):
+    """
+    Fine-tune the question generation model on example questions
+    
+    Args:
+        examples (list): List of dicts with 'context' and 'question' keys
+        output_dir (str): Directory to save the fine-tuned model
+        epochs (int): Number of training epochs
+        batch_size (int): Batch size for training
+        
+    Returns:
+        str: Path to the saved model
+    """
+    global model, tokenizer, question_generator
+    
+    print(f"Starting fine-tuning on {len(examples)} examples")
+    
+    # Prepare dataset
+    dataset = QuestionGenerationDataset(examples, tokenizer)
+    
+    # Define training arguments
+    training_args = TrainingArguments(
+        output_dir=output_dir,
+        num_train_epochs=epochs,
+        per_device_train_batch_size=batch_size,
+        save_steps=len(dataset) // batch_size,
+        save_total_limit=2,
+        logging_dir=os.path.join(output_dir, 'logs'),
+        logging_steps=len(dataset) // (batch_size * 2),
+        warmup_steps=500,
+        weight_decay=0.01,
+    )
+    
+    # Initialize trainer
+    trainer = Trainer(
+        model=model,
+        args=training_args,
+        train_dataset=dataset,
+    )
+    
+    # Train the model
+    trainer.train()
+    
+    # Save the fine-tuned model
+    trainer.save_model(output_dir)
+    tokenizer.save_pretrained(output_dir)
+    
+    # Update the global model and pipeline with fine-tuned version
+    model = trainer.model
+    question_generator = pipeline(
+        'text2text-generation',
+        model=model,
+        tokenizer=tokenizer,
+        device=device
+    )
+    
+    print(f"Model fine-tuning complete. Saved to {output_dir}")
+    return output_dir
+
+def prepare_examples_from_question_paper(paper_path):
+    """
+    Extract training examples from a question paper file
+    
+    Args:
+        paper_path (str): Path to the question paper file (JSON format)
+        
+    Returns:
+        list: Examples in the format needed for training
+    """
+    examples = []
+    
+    try:
+        with open(paper_path, 'r', encoding='utf-8') as f:
+            paper_data = json.load(f)
+            
+        # Expected format: list of question objects with 'context', 'question', 'answer' fields
+        for item in paper_data:
+            if 'context' in item and 'question' in item:
+                examples.append({
+                    'context': item['context'],
+                    'question': item['question']
+                })
+    except Exception as e:
+        print(f"Error processing question paper file: {e}")
+    
+    return examples
+
+def load_question_papers_from_directory(directory_path):
+    """
+    Load all question paper examples from a directory
+    
+    Args:
+        directory_path (str): Path to directory containing question paper files
+        
+    Returns:
+        list: Combined examples from all papers
+    """
+    all_examples = []
+    
+    if not os.path.exists(directory_path):
+        print(f"Directory not found: {directory_path}")
+        return all_examples
+    
+    for filename in os.listdir(directory_path):
+        if filename.endswith('.json'):
+            file_path = os.path.join(directory_path, filename)
+            examples = prepare_examples_from_question_paper(file_path)
+            all_examples.extend(examples)
+            print(f"Loaded {len(examples)} examples from {filename}")
+    
+    return all_examples
 
 def generate_questions(text, num_questions=5, question_type='both', difficulty='medium'):
     """
@@ -219,8 +400,8 @@ def generate_structured_questions(sentences, num_questions, difficulty):
         # Try multiple times per sentence to get a valid question
         for attempt in range(max_attempts_per_sentence):
             generated_output = question_generator(
-                prompt,
-                max_length=64,
+                prompt, 
+                max_length=64, 
                 num_return_sequences=1,
                 do_sample=True,
                 temperature=0.6, # Slightly lower temperature for more focused output
@@ -228,7 +409,7 @@ def generate_structured_questions(sentences, num_questions, difficulty):
                 no_repeat_ngram_size=3,
                 early_stopping=True # Enable early stopping
             )[0]['generated_text']
-            
+        
             # Clean and validate the question
             cleaned_question = clean_question_text(generated_output)
             if cleaned_question and '?' in cleaned_question:
@@ -304,7 +485,7 @@ def generate_multiple_choice_questions(sentences, num_questions, difficulty):
                 top_p=0.85,
                 no_repeat_ngram_size=3
             )[0]['generated_text']
-            
+        
             # Clean and validate the question
             cleaned_question = clean_question_text(question_text)
             if cleaned_question and '?' in cleaned_question:
@@ -453,3 +634,181 @@ def clean_question_text(text):
         return None
     
     return question
+
+def parse_questions_from_pdf(pdf_path):
+    """
+    Extract questions and answers from a PDF question paper
+    
+    Args:
+        pdf_path (str): Path to the PDF file
+        
+    Returns:
+        list: Extracted examples in the format needed for training
+    """
+    # Extract text from PDF
+    text = extract_text_from_pdf(pdf_path)
+    
+    # Split text into sections/paragraphs
+    paragraphs = re.split(r'\n\s*\n', text)
+    
+    # Patterns to identify questions and answers
+    question_patterns = [
+        # Common question patterns
+        r'(?i)^\s*(\d+\.|\d+\)|\d+\s+|[A-Z]\.|\([a-z]\))\s*(.+\?)',  # Numbered questions with question mark
+        r'(?i)^\s*(?:Question|Q)[\s:\.]+(.*\?)',  # Questions labeled with "Question:" or "Q:"
+        r'(?i)(.+\?)\s*(?:\n|$)'  # Any line ending with a question mark
+    ]
+    
+    # Patterns to identify answers 
+    answer_patterns = [
+        # Common answer patterns
+        r'(?i)^\s*(?:Answer|A)[\s:\.]+(.*)',  # Answers labeled with "Answer:" or "A:"
+        r'(?i)^\s*(?:Solution|Sol)[\s:\.]+(.*)',  # Solutions
+        r'(?i)^\s*(?:Correct answer)[\s:\.]+(.*)'  # Correct answer 
+    ]
+    
+    examples = []
+    current_context = ""
+    current_question = None
+    
+    # Process each paragraph
+    for para in paragraphs:
+        para = para.strip()
+        if len(para) < 10:  # Skip very short paragraphs
+            continue
+            
+        # If this paragraph doesn't look like a question or answer, treat it as context
+        is_question = False
+        is_answer = False
+        
+        # Check if this paragraph contains a question
+        for pattern in question_patterns:
+            match = re.search(pattern, para)
+            if match:
+                # If we already have a question without an answer, save the previous question
+                if current_question and current_context:
+                    examples.append({
+                        'context': current_context,
+                        'question': current_question,
+                        'answer': "Unable to extract answer automatically"
+                    })
+                
+                # Get the question text
+                question_text = match.group(2) if len(match.groups()) > 1 else match.group(1)
+                current_question = question_text.strip()
+                current_context = para  # Use the paragraph as context
+                is_question = True
+                break
+                
+        # Check if this paragraph contains an answer to the current question
+        if current_question and not is_question:
+            for pattern in answer_patterns:
+                match = re.search(pattern, para)
+                if match:
+                    answer_text = match.group(1)
+                    
+                    # Add the example with question, answer and context
+                    examples.append({
+                        'context': current_context,
+                        'question': current_question,
+                        'answer': answer_text.strip()
+                    })
+                    
+                    # Reset for next question
+                    current_question = None
+                    current_context = ""
+                    is_answer = True
+                    break
+                    
+        # If it's neither a question nor an answer, and we have a current question,
+        # append this paragraph to the context in case it contains information for the answer
+        if current_question and not is_question and not is_answer:
+            current_context += " " + para
+    
+    # If we have a pending question without an answer at the end
+    if current_question and current_context:
+        examples.append({
+            'context': current_context,
+            'question': current_question,
+            'answer': "Unable to extract answer automatically"
+        })
+    
+    return examples
+
+def extract_multiple_choice_from_pdf(pdf_path):
+    """
+    Extract multiple-choice questions from a PDF file
+    
+    Args:
+        pdf_path (str): Path to the PDF file
+        
+    Returns:
+        list: Extracted multiple-choice examples
+    """
+    # Extract text from PDF
+    text = extract_text_from_pdf(pdf_path)
+    
+    # Split text into potential question blocks
+    # Looking for patterns like "1. Question text" followed by options
+    question_blocks = re.split(r'\n\s*(?:\d+\.|\(\d+\))', text)
+    
+    examples = []
+    
+    for block in question_blocks:
+        block = block.strip()
+        if len(block) < 20:  # Skip short blocks
+            continue
+            
+        # Extract the question (assuming it ends with a question mark)
+        question_match = re.search(r'(.*?\?)', block)
+        if not question_match:
+            continue
+            
+        question = question_match.group(1).strip()
+        
+        # Extract options - look for patterns like "A. Option text" or "a) Option text"
+        options = []
+        options_text = block[question_match.end():].strip()
+        
+        option_matches = re.finditer(r'(?:^|\n)\s*([A-Za-z])[\.:\)][ \t]*(.*?)(?=\n\s*[A-Za-z][\.:\)]|$)', options_text)
+        for match in option_matches:
+            option_label = match.group(1)
+            option_text = match.group(2).strip()
+            options.append((option_label, option_text))
+            
+        # If we found a question and at least 2 options
+        if question and len(options) >= 2:
+            # Look for the correct answer indicator (often marked with *)
+            correct_answer = None
+            for label, text in options:
+                if '*' in text or '(correct)' in text.lower():
+                    correct_answer = text.replace('*', '').replace('(correct)', '').strip()
+                    break
+                    
+            # If no marked correct answer, try to find it in the text
+            if not correct_answer and len(options) > 0:
+                # Look for patterns like "Answer: B" or "Correct option: C"
+                answer_match = re.search(r'(?:Answer|Correct)[:\s]+([A-Za-z])', block)
+                if answer_match:
+                    correct_label = answer_match.group(1)
+                    for label, text in options:
+                        if label.upper() == correct_label.upper():
+                            correct_answer = text
+                            break
+            
+            # If still no correct answer, use the first option as a fallback
+            if not correct_answer and len(options) > 0:
+                correct_answer = options[0][1]
+                
+            # Format options for the training example
+            option_texts = [text for _, text in options]
+            
+            examples.append({
+                'context': block,
+                'question': question,
+                'answer': correct_answer,
+                'options': option_texts,
+                'type': 'multiple_choice'
+            })
+    
+    return examples
