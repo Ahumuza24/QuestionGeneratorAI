@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+
+{% block title %}Contact Us - AI Based Question Generation System {% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row mb-5">
+        <div class="col-md-12 text-center">
+            <h1 class="display-4 mb-4">Contact Us</h1>
+            <p class="lead">Have questions or feedback? We'd love to hear from you!</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h2 class="card-title mb-4">Send Us a Message</h2>
+                    <form>
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Your Name</label>
+                            <input type="text" class="form-control" id="name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email Address</label>
+                            <input type="email" class="form-control" id="email" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="subject" class="form-label">Subject</label>
+                            <select class="form-select" id="subject" required>
+                                <option value="" selected disabled>Select a subject</option>
+                                <option value="general">General Inquiry</option>
+                                <option value="support">Technical Support</option>
+                                <option value="feedback">Feedback</option>
+                                <option value="feature">Feature Request</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="message" class="form-label">Message</label>
+                            <textarea class="form-control" id="message" rows="5" required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Send Message</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h2 class="card-title mb-4">Contact Information</h2>
+                    <p>Feel free to reach out to us using any of the following methods:</p>
+                    
+                    <div class="d-flex mb-3">
+                        <div class="me-3">
+                            <i class="fas fa-envelope fa-2x text-primary"></i>
+                        </div>
+                        <div>
+                            <h5>Email</h5>
+                            <p class="mb-0">ahumuzacedric@gmail.com</p>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex mb-3">
+                        <div class="me-3">
+                            <i class="fas fa-phone fa-2x text-primary"></i>
+                        </div>
+                        <div>
+                            <h5>Phone</h5>
+                            <p class="mb-0">+256 703 103 834</p>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex mb-3">
+                        <div class="me-3">
+                            <i class="fas fa-map-marker-alt fa-2x text-primary"></i>
+                        </div>
+                        <div>
+                            <h5>Address</h5>
+                            <p class="mb-0">
+                                Zakariyyah House<br>
+                                Kalerwe<br>
+                               Uganda
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex mb-3">
+                        <div class="me-3">
+                            <i class="fas fa-clock fa-2x text-primary"></i>
+                        </div>
+                        <div>
+                            <h5>Business Hours</h5>
+                            <p class="mb-0">
+                                Monday - Friday: 9:00 AM - 5:00 PM (EAT)<br>
+                                Saturday - Sunday: Closed
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-body">
+                    <h2 class="card-title mb-4">Connect With Us</h2>
+                    <p>Follow us on social media for updates, tips, and more:</p>
+                    
+                    <div class="d-flex justify-content-around social-icons">
+                        <a href="#" class="text-primary"><i class="fab fa-facebook-f fa-2x"></i></a>
+                        <a href="#" class="text-info"><i class="fab fa-twitter fa-2x"></i></a>
+                        <a href="#" class="text-danger"><i class="fab fa-instagram fa-2x"></i></a>
+                        <a href="#" class="text-primary"><i class="fab fa-linkedin-in fa-2x"></i></a>
+                        <a href="#" class="text-dark"><i class="fab fa-github fa-2x"></i></a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mt-5">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body">
+                    <h2 class="card-title mb-4">Frequently Asked Questions</h2>
+                    
+                    <div class="accordion" id="faqAccordion">
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingOne">
+                                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+                                    What file formats are supported?
+                                </button>
+                            </h2>
+                            <div id="collapseOne" class="accordion-collapse collapse show" aria-labelledby="headingOne" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    Currently, we support PDF (.pdf) and Microsoft Word (.docx, .doc) documents. We're working on adding support for more formats in the future.
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingTwo">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+                                    How many questions can I generate?
+                                </button>
+                            </h2>
+                            <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    You can generate up to 50 questions per document. This limit helps ensure the quality of the generated questions and prevents system overload.
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingThree">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
+                                    Can I edit the generated questions?
+                                </button>
+                            </h2>
+                            <div id="collapseThree" class="accordion-collapse collapse" aria-labelledby="headingThree" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    Yes, you can edit both the questions and answers after generation. This allows you to refine the AI-generated content to better suit your needs.
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingFour">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFour" aria-expanded="false" aria-controls="collapseFour">
+                                    How does the AI generate questions?
+                                </button>
+                            </h2>
+                            <div id="collapseFour" class="accordion-collapse collapse" aria-labelledby="headingFour" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    Our system uses natural language processing (NLP) and machine learning to analyze your document, identify key concepts and information, and formulate relevant questions. For multiple-choice questions, it also generates plausible distractors based on the content.
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingFive">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFive" aria-expanded="false" aria-controls="collapseFive">
+                                    Is my data secure?
+                                </button>
+                            </h2>
+                            <div id="collapseFive" class="accordion-collapse collapse" aria-labelledby="headingFive" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    Yes, we take data security seriously. Your documents and generated questions are stored securely and are only accessible to you. We do not share your data with third parties, and you can delete your documents at any time.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

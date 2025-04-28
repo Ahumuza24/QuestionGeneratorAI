@@ -1,0 +1,240 @@
+{% extends "base.html" %}
+
+{% block title %}{{ document.title }} - AI Based Question Generation System {% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('questions.list_documents') }}">My Documents</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">{{ document.title }}</li>
+                </ol>
+            </nav>
+            <h1 class="mb-3">{{ document.title }}</h1>
+            <p class="lead">View document details and manage questions.</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <div class="btn-group" role="group">
+                <a href="{{ url_for('questions.generate_questions_form', document_id=document.id) }}" class="btn btn-success">
+                    <i class="fas fa-brain me-2"></i>Generate Questions
+                </a>
+                {% if document.questions %}
+                    <a href="{{ url_for('questions.view_questions', document_id=document.id) }}" class="btn btn-primary">
+                        <i class="fas fa-question-circle me-2"></i>View Questions
+                    </a>
+                {% endif %}
+                <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteDocumentModal">
+                    <i class="fas fa-trash me-2"></i>Delete
+                </button>
+            </div>
+            
+            <!-- Delete Document Modal -->
+            <div class="modal fade" id="deleteDocumentModal" tabindex="-1" aria-labelledby="deleteDocumentModalLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="deleteDocumentModalLabel">Confirm Delete</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            Are you sure you want to delete the document "{{ document.title }}"? This will also delete all associated questions and cannot be undone.
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <form action="{{ url_for('questions.delete_document', document_id=document.id) }}" method="POST" class="d-inline">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-danger">Delete</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Document Information</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <span><strong>Filename:</strong></span>
+                            <span>{{ document.filename }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <span><strong>Uploaded:</strong></span>
+                            <span>{{ document.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <span><strong>Questions:</strong></span>
+                            <span class="badge bg-primary rounded-pill">{{ document.questions|length }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <span><strong>Content Length:</strong></span>
+                            <span>{{ document.content|length }} characters</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            
+            {% if document.questions %}
+                <div class="card">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0">Question Statistics</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <h6>Question Types</h6>
+                            <div class="progress mb-2">
+                                {% set mc_count = document.questions|selectattr('question_type', 'equalto', 'multiple_choice')|list|length %}
+                                {% set structured_count = document.questions|selectattr('question_type', 'equalto', 'structured')|list|length %}
+                                {% set mc_percent = (mc_count / document.questions|length * 100)|int %}
+                                {% set structured_percent = (structured_count / document.questions|length * 100)|int %}
+                                
+                                <div class="progress-bar bg-info" role="progressbar" style="width: {{ mc_percent }}%" aria-valuenow="{{ mc_percent }}" aria-valuemin="0" aria-valuemax="100">{{ mc_percent }}%</div>
+                                <div class="progress-bar bg-success" role="progressbar" style="width: {{ structured_percent }}%" aria-valuenow="{{ structured_percent }}" aria-valuemin="0" aria-valuemax="100">{{ structured_percent }}%</div>
+                            </div>
+                            <div class="d-flex justify-content-between">
+                                <small><span class="badge bg-info me-1"></span> Multiple Choice ({{ mc_count }})</small>
+                                <small><span class="badge bg-success me-1"></span> Structured ({{ structured_count }})</small>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <h6>Difficulty Levels</h6>
+                            <div class="progress mb-2">
+                                {% set easy_count = document.questions|selectattr('difficulty', 'equalto', 'easy')|list|length %}
+                                {% set medium_count = document.questions|selectattr('difficulty', 'equalto', 'medium')|list|length %}
+                                {% set hard_count = document.questions|selectattr('difficulty', 'equalto', 'hard')|list|length %}
+                                {% set mixed_count = document.questions|selectattr('difficulty', 'equalto', 'mixed')|list|length %}
+                                
+                                {% set easy_percent = (easy_count / document.questions|length * 100)|int %}
+                                {% set medium_percent = (medium_count / document.questions|length * 100)|int %}
+                                {% set hard_percent = (hard_count / document.questions|length * 100)|int %}
+                                {% set mixed_percent = (mixed_count / document.questions|length * 100)|int %}
+                                
+                                <div class="progress-bar bg-success" role="progressbar" style="width: {{ easy_percent }}%" aria-valuenow="{{ easy_percent }}" aria-valuemin="0" aria-valuemax="100">{{ easy_percent }}%</div>
+                                <div class="progress-bar bg-warning" role="progressbar" style="width: {{ medium_percent }}%" aria-valuenow="{{ medium_percent }}" aria-valuemin="0" aria-valuemax="100">{{ medium_percent }}%</div>
+                                <div class="progress-bar bg-danger" role="progressbar" style="width: {{ hard_percent }}%" aria-valuenow="{{ hard_percent }}" aria-valuemin="0" aria-valuemax="100">{{ hard_percent }}%</div>
+                                <div class="progress-bar bg-secondary" role="progressbar" style="width: {{ mixed_percent }}%" aria-valuenow="{{ mixed_percent }}" aria-valuemin="0" aria-valuemax="100">{{ mixed_percent }}%</div>
+                            </div>
+                            <div class="d-flex justify-content-between flex-wrap">
+                                <small><span class="badge bg-success me-1"></span> Easy ({{ easy_count }})</small>
+                                <small><span class="badge bg-warning me-1"></span> Medium ({{ medium_count }})</small>
+                                <small><span class="badge bg-danger me-1"></span> Hard ({{ hard_count }})</small>
+                                <small><span class="badge bg-secondary me-1"></span> Mixed ({{ mixed_count }})</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+        
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Document Preview</h5>
+                </div>
+                <div class="card-body">
+                    <div class="document-preview p-3 bg-light rounded" style="max-height: 500px; overflow-y: auto;">
+                        {% set paragraphs = document.content.split('\n\n') %}
+                        {% for paragraph in paragraphs[:10] %}
+                            {% if paragraph.strip() %}
+                                <p>{{ paragraph }}</p>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if paragraphs|length > 10 %}
+                            <div class="text-center mt-3">
+                                <p class="text-muted">Document preview truncated. The full content is used for question generation.</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            {% if document.questions %}
+                <div class="card mt-4">
+                    <div class="card-header bg-light">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">Recent Questions</h5>
+                            <a href="{{ url_for('questions.view_questions', document_id=document.id) }}" class="btn btn-sm btn-primary">View All</a>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="list-group">
+                            {% for question in document.questions|sort(attribute='created_at', reverse=True)|batch(5)|first|default([]) %}
+                                <div class="list-group-item">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h6 class="mb-1">
+                                            <span class="badge {% if question.question_type == 'multiple_choice' %}bg-info{% else %}bg-success{% endif %} me-2">
+                                                {{ question.question_type|replace('_', ' ')|title }}
+                                            </span>
+                                            {{ question.content }}
+                                        </h6>
+                                        <small class="text-muted">{{ question.difficulty|title }}</small>
+                                    </div>
+                                    <p class="mb-1">
+                                        <strong>Answer:</strong> {{ question.answer }}
+                                    </p>
+                                    <div class="d-flex justify-content-end">
+                                        <a href="{{ url_for('questions.edit_question', question_id=question.id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            {% else %}
+                <div class="card mt-4">
+                    <div class="card-body text-center py-4">
+                        <i class="fas fa-question-circle fa-3x text-muted mb-3"></i>
+                        <h5>No Questions Generated Yet</h5>
+                        <p class="text-muted mb-3">Generate questions to start creating your quiz.</p>
+                        <a href="{{ url_for('questions.generate_questions_form', document_id=document.id) }}" class="btn btn-primary">
+                            <i class="fas fa-brain me-2"></i>Generate Questions
+                        </a>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Direct form submission method as a fallback -->
+<div style="display: none;">
+    <form id="direct-delete-form" action="{{ url_for('questions.delete_document', document_id=document.id) }}" method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Ensure document delete form works without interruption
+document.addEventListener('DOMContentLoaded', function() {
+    var deleteForm = document.querySelector('form[action*="delete_document"]');
+    if (deleteForm) {
+        // Remove any existing event listeners by cloning and replacing the form
+        var newDeleteForm = deleteForm.cloneNode(true);
+        deleteForm.parentNode.replaceChild(newDeleteForm, deleteForm);
+    }
+    
+    // Add a way to trigger the direct form if needed
+    var deleteButton = document.querySelector('button[data-bs-target="#deleteDocumentModal"]');
+    if (deleteButton) {
+        deleteButton.addEventListener('dblclick', function(e) {
+            // Double-click will bypass the modal and submit directly (emergency backup)
+            if (confirm('Bypass modal and delete document directly?')) {
+                document.getElementById('direct-delete-form').submit();
+            }
+        });
+    }
+});
+</script>
+{% endblock %} 

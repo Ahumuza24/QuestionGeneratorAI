@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}Create New Course{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <h1 class="mb-4">Create New Course</h1>
+  
+  <div class="row">
+    <div class="col-md-8">
+      <div class="card">
+        <div class="card-body">
+          <form method="POST">
+            {{ form.hidden_tag() }}
+            
+            <div class="mb-3">
+              {{ form.name.label(class="form-label") }}
+              {{ form.name(class="form-control" + (" is-invalid" if form.name.errors else "")) }}
+              {% if form.name.errors %}
+                <div class="invalid-feedback">
+                  {% for error in form.name.errors %}
+                    {{ error }}
+                  {% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            
+            <div class="mb-3">
+              {{ form.description.label(class="form-label") }}
+              {{ form.description(class="form-control" + (" is-invalid" if form.description.errors else ""), rows=5) }}
+              {% if form.description.errors %}
+                <div class="invalid-feedback">
+                  {% for error in form.description.errors %}
+                    {{ error }}
+                  {% endfor %}
+                </div>
+              {% endif %}
+              <div class="form-text">A brief description of the course content and objectives.</div>
+            </div>
+            
+            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+              <a href="{{ url_for('courses.list_courses') }}" class="btn btn-outline-secondary me-md-2">Cancel</a>
+              {{ form.submit(class="btn btn-primary") }}
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-md-4">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">About Courses</h5>
+          <p class="card-text">Courses help you organize your documents and questions by subject or topic.</p>
+          <p class="card-text">After creating a course, you can add documents to it and generate questions specific to that course.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

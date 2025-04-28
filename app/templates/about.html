@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+
+{% block title %}About -AI Based Question Generation System{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row mb-5">
+        <div class="col-md-12 text-center">
+            <h1 class="display-4 mb-4">About AI Based Question Generation System</h1>
+            <p class="lead">An intelligent system that leverages AI to generate high-quality questions from uploaded documents.</p>
+        </div>
+    </div>
+
+    <div class="row mb-5">
+        <div class="col-md-6">
+            <h2 class="mb-4">Our Mission</h2>
+            <p>The AI Based Question Generation System was created to simplify the process of creating educational assessments, quizzes, and study materials. Our mission is to help educators, students, and professionals save time while creating high-quality questions from their learning materials.</p>
+            <p>By leveraging the power of artificial intelligence and natural language processing, we can automatically generate relevant questions that test understanding and knowledge of any subject matter contained in your documents.</p>
+        </div>
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h3 class="card-title mb-4">Key Benefits</h3>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item">
+                            <i class="fas fa-clock text-primary me-2"></i>
+                            <strong>Save Time</strong> - Generate questions in seconds instead of hours
+                        </li>
+                        <li class="list-group-item">
+                            <i class="fas fa-brain text-primary me-2"></i>
+                            <strong>AI-Powered</strong> - Leverages advanced NLP models for quality questions
+                        </li>
+                        <li class="list-group-item">
+                            <i class="fas fa-file-alt text-primary me-2"></i>
+                            <strong>Multiple Formats</strong> - Create both multiple-choice and structured questions
+                        </li>
+                        <li class="list-group-item">
+                            <i class="fas fa-edit text-primary me-2"></i>
+                            <strong>Customizable</strong> - Edit and refine generated questions
+                        </li>
+                        <li class="list-group-item">
+                            <i class="fas fa-file-pdf text-primary me-2"></i>
+                            <strong>Easy Export</strong> - Download questions and answers as PDF
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-5">
+        <div class="col-md-12">
+            <h2 class="mb-4">How It Works</h2>
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="card text-center h-100">
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <i class="fas fa-file-upload fa-3x text-primary"></i>
+                            </div>
+                            <h4>1. Upload</h4>
+                            <p>Upload your PDF or Word document containing the content you want to generate questions from.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center h-100">
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <i class="fas fa-cogs fa-3x text-primary"></i>
+                            </div>
+                            <h4>2. Configure</h4>
+                            <p>Choose the number of questions, question types, and difficulty level.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center h-100">
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <i class="fas fa-magic fa-3x text-primary"></i>
+                            </div>
+                            <h4>3. Generate</h4>
+                            <p>Our AI analyzes your document and generates relevant questions and answers.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center h-100">
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <i class="fas fa-file-export fa-3x text-primary"></i>
+                            </div>
+                            <h4>4. Export</h4>
+                            <p>Review, edit, and export your questions and answers to PDF.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-5">
+        <div class="col-md-12">
+            <h2 class="mb-4">Technology Behind the System</h2>
+            <p>AI Based Question Generation System uses state-of-the-art natural language processing (NLP) and machine learning technologies to analyze documents and generate meaningful questions. Our system leverages transformer-based models that have been trained on vast amounts of text data to understand context, identify key concepts, and formulate relevant questions.</p>
+            <div class="row mt-4">
+                <div class="col-md-4">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h4 class="card-title">Document Processing</h4>
+                            <p class="card-text">We use advanced text extraction techniques to process PDF and Word documents, ensuring we capture all the important content for question generation.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h4 class="card-title">Question Generation</h4>
+                            <p class="card-text">Our AI models identify key sentences and concepts in the text and transform them into questions using sophisticated natural language generation techniques.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h4 class="card-title">Answer Generation</h4>
+                            <p class="card-text">For each question, our system determines the correct answer and, for multiple-choice questions, generates plausible distractors to challenge the test-taker.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12 text-center">
+            <h2 class="mb-4">Ready to Get Started?</h2>
+            <p class="lead mb-4">Join thousands of users who are already saving time with AI-powered question generation.</p>
+            {% if current_user.is_authenticated %}
+                <a href="{{ url_for('questions.upload_document') }}" class="btn btn-primary btn-lg px-4">Upload Document</a>
+            {% else %}
+                <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-lg px-4">Sign Up Now</a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %} 

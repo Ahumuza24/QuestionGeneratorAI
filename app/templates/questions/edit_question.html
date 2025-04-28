@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Question - AI Based Question Generation System {% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('questions.list_documents') }}">My Documents</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('questions.view_document', document_id=question.document_id) }}">{{ question.document.title }}</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('questions.view_questions', document_id=question.document_id) }}">Questions</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Edit Question</li>
+                </ol>
+            </nav>
+            <h1 class="mb-3">Edit Question</h1>
+            <p class="lead">Modify the question content, options, or answer.</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Question Editor</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="">
+                        <div class="mb-3">
+                            <label for="content" class="form-label">Question</label>
+                            <textarea class="form-control" id="content" name="content" rows="3" required>{{ question.content }}</textarea>
+                        </div>
+                        
+                        {% if question.question_type == 'multiple_choice' and question.options %}
+                            <div class="mb-4">
+                                <label class="form-label">Options</label>
+                                <div class="alert alert-info mb-2">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    Mark the correct answer by selecting the radio button next to it.
+                                </div>
+                                
+                                {% for option in question.options %}
+                                    <div class="input-group mb-2">
+                                        <div class="input-group-text">
+                                            <input class="form-check-input mt-0" type="radio" name="correct_option" value="{{ loop.index0 }}" {% if option == question.answer %}checked{% endif %}>
+                                        </div>
+                                        <input type="text" class="form-control" name="option_{{ loop.index0 }}" value="{{ option }}" required>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="mb-4">
+                                <label for="answer" class="form-label">Answer</label>
+                                <textarea class="form-control" id="answer" name="answer" rows="3" required>{{ question.answer }}</textarea>
+                            </div>
+                        {% endif %}
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('questions.view_questions', document_id=question.document_id) }}" class="btn btn-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

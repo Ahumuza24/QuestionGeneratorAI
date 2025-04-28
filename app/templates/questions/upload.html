@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block title %}Upload Document - AI Based Question Generation System {% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Upload Document</h4>
+                </div>
+                <div class="card-body">
+                    <p class="card-text mb-4">
+                        Upload a PDF or Word document to generate questions. The system will extract text from the document and use AI to generate relevant questions.
+                    </p>
+                    
+                    <form method="POST" action="" enctype="multipart/form-data">
+                        {{ form.hidden_tag() }}
+                        <div class="mb-3">
+                            {{ form.title.label(class="form-label") }}
+                            {% if form.title.errors %}
+                                {{ form.title(class="form-control is-invalid") }}
+                                <div class="invalid-feedback">
+                                    {% for error in form.title.errors %}
+                                        <span>{{ error }}</span>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                {{ form.title(class="form-control", placeholder="Enter a descriptive title for your document") }}
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-4">
+                            {{ form.document.label(class="form-label") }}
+                            <div class="input-group">
+                                {% if form.document.errors %}
+                                    {{ form.document(class="form-control is-invalid") }}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.document.errors %}
+                                            <span>{{ error }}</span>
+                                        {% endfor %}
+                                    </div>
+                                {% else %}
+                                    {{ form.document(class="form-control") }}
+                                {% endif %}
+                            </div>
+                            <div class="form-text">Supported formats: PDF, DOCX, DOC. Maximum file size: 16MB.</div>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            {{ form.submit(class="btn btn-primary") }}
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="card mt-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Tips for Best Results</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item">
+                            <i class="fas fa-check-circle text-success me-2"></i>
+                            Use documents with clear, well-structured text for better question generation.
+                        </li>
+                        <li class="list-group-item">
+                            <i class="fas fa-check-circle text-success me-2"></i>
+                            Ensure your PDF documents have selectable text (not scanned images).
+                        </li>
+                        <li class="list-group-item">
+                            <i class="fas fa-check-circle text-success me-2"></i>
+                            Documents with educational content, articles, or textbook material work best.
+                        </li>
+                        <li class="list-group-item">
+                            <i class="fas fa-check-circle text-success me-2"></i>
+                            For multiple-choice questions, documents with factual content are recommended.
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

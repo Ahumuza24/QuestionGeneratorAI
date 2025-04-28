@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+
+{% block title %}My Documents - AI Based Question Generation System {% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1>My Documents</h1>
+            <p class="lead">Manage your uploaded documents and generated questions.</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{{ url_for('questions.upload_document') }}" class="btn btn-primary">
+                <i class="fas fa-file-upload me-2"></i>Upload New Document
+            </a>
+        </div>
+    </div>
+
+    {% if documents %}
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header bg-light">
+                        <div class="row align-items-center">
+                            <div class="col">
+                                <h5 class="mb-0">Your Documents</h5>
+                            </div>
+                            <div class="col-auto">
+                                <span class="badge bg-primary">{{ documents|length }} Documents</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Title</th>
+                                        <th>Filename</th>
+                                        <th>Questions</th>
+                                        <th>Created</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for document in documents|sort(attribute='created_at', reverse=True) %}
+                                        <tr>
+                                            <td>{{ document.title }}</td>
+                                            <td>{{ document.filename }}</td>
+                                            <td>
+                                                {% if document.questions|length > 0 %}
+                                                    <span class="badge bg-success">{{ document.questions|length }} Questions</span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary">No Questions</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ document.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                            <td>
+                                                <div class="btn-group" role="group">
+                                                    <a href="{{ url_for('questions.view_document', document_id=document.id) }}" 
+                                                       class="btn btn-sm btn-outline-primary" 
+                                                       title="View Document">
+                                                        <i class="fas fa-eye"></i>
+                                                    </a>
+                                                    <a href="{{ url_for('questions.generate_questions_form', document_id=document.id) }}" 
+                                                       class="btn btn-sm btn-outline-success"
+                                                       title="Generate Questions">
+                                                        <i class="fas fa-brain"></i>
+                                                    </a>
+                                                    {% if document.questions|length > 0 %}
+                                                        <a href="{{ url_for('questions.view_questions', document_id=document.id) }}" 
+                                                           class="btn btn-sm btn-outline-info"
+                                                           title="View Questions">
+                                                            <i class="fas fa-question-circle"></i>
+                                                        </a>
+                                                        <a href="{{ url_for('questions.export_questions', document_id=document.id) }}" 
+                                                           class="btn btn-sm btn-outline-secondary"
+                                                           title="Export Questions">
+                                                            <i class="fas fa-file-pdf"></i>
+                                                        </a>
+                                                    {% endif %}
+                                                    <button type="button" 
+                                                            class="btn btn-sm btn-outline-danger delete-doc-btn"
+                                                            data-document-id="{{ document.id }}"
+                                                            data-document-title="{{ document.title }}"
+                                                            title="Delete Document">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% else %}
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-body text-center py-5">
+                        <i class="fas fa-file-upload fa-4x text-muted mb-4"></i>
+                        <h4>No Documents Yet</h4>
+                        <p class="text-muted mb-4">You haven't uploaded any documents yet. Upload a document to get started!</p>
+                        <a href="{{ url_for('questions.upload_document') }}" class="btn btn-primary">
+                            <i class="fas fa-file-upload me-2"></i>Upload Document
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Single Global Delete Confirmation Modal -->
+<div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-labelledby="deleteConfirmModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteConfirmModalLabel">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete the document "<span id="documentTitle"></span>"?</p>
+                <p class="text-danger">This will also delete all associated questions and cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="deleteDocumentForm" action="" method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Hidden form for direct submission if all else fails -->
+<div style="display:none">
+    <form id="emergencyDeleteForm" method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Get the modal element
+    var deleteModal = document.getElementById('deleteConfirmModal');
+    var deleteForm = document.getElementById('deleteDocumentForm');
+    var documentTitleSpan = document.getElementById('documentTitle');
+    var emergencyForm = document.getElementById('emergencyDeleteForm');
+    
+    // Get all delete buttons
+    var deleteButtons = document.querySelectorAll('.delete-doc-btn');
+    
+    // Create the Bootstrap modal instance
+    var confirmModal = new bootstrap.Modal(deleteModal);
+    
+    // Add click event to all delete buttons
+    deleteButtons.forEach(function(button) {
+        button.addEventListener('click', function() {
+            var documentId = this.getAttribute('data-document-id');
+            var documentTitle = this.getAttribute('data-document-title');
+            
+            // Set the document title in the modal
+            documentTitleSpan.textContent = documentTitle;
+            
+            // Set the form action URL
+            deleteForm.action = "/document/" + documentId + "/delete";
+            
+            // Show the modal
+            confirmModal.show();
+        });
+    });
+    
+    // Ensure the form submits when the delete button in the modal is clicked
+    deleteForm.addEventListener('submit', function(e) {
+        // Hide the modal before submitting to avoid any modal-related issues
+        confirmModal.hide();
+        
+        // No preventDefault - let the form submit normally
+    });
+    
+    // Emergency delete function - accessible from console if needed
+    window.emergencyDeleteDocument = function(documentId) {
+        if (confirm('Emergency delete: Are you sure?')) {
+            emergencyForm.action = "/document/" + documentId + "/delete";
+            emergencyForm.submit();
+        }
+    };
+    
+    console.log("Document management page initialized successfully");
+});
+</script>
+{% endblock %} 

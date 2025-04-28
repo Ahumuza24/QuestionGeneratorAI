@@ -1,0 +1,104 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+venv/
+ENV/
+env/
+.env
+
+# IDE specific files
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Flask stuff
+instance/
+.webassets-cache
+.flask_session/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+logs/
+*.log
+
+# API keys and secrets
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+config.py
+
+# AI model files (these can be large and should be downloaded instead of committed)
+*.pt
+*.pth
+*.bin
+*.h5
+*.onnx
+*.pkl
+*.joblib
+
+# Generated content
+generated/
+output/
+data/processed/
+
+# Gemini API credentials
+credentials.json
+gemini_key.txt
+GEMINI_API_KEY
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb
+
+# Local development settings
+settings.json
+local_settings.py
+
+# Testing
+.coverage
+htmlcov/
+.pytest_cache/
+.tox/
+nosetests.xml
+coverage.xml
+*.cover
+
+# Documentation
+docs/_build/
+docs/api/
+
+# Mac OS
+.DS_Store
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini

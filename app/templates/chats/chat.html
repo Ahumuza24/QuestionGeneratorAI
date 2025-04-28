@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block title %}{{ chat.title }} - Chat{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>{{ chat.title }}</h1>
+    <a href="{{ url_for('courses.view_course', course_id=course.id) }}" class="btn btn-outline-secondary">
+      <i class="fas fa-arrow-left me-2"></i>Back to Course
+    </a>
+  </div>
+  
+  <div class="card">
+    <div class="card-header">
+      <div class="d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Chat History</h5>
+        <span class="badge bg-secondary">{{ chat.messages|length }} messages</span>
+      </div>
+    </div>
+    <div class="card-body chat-container" id="chat-messages" style="max-height: 500px; overflow-y: auto;">
+      {% if chat.messages %}
+        {% for message in chat.messages %}
+          <div class="mb-4 {% if message.role == 'user' %}text-end{% endif %}">
+            <div class="d-inline-block p-3 rounded position-relative {% if message.role == 'user' %}bg-primary text-white{% else %}bg-light{% endif %}" 
+                 style="max-width: 80%; text-align: left;">
+              {% if message.role == 'user' %}
+                {{ message.content }}
+              {% else %}
+                {{ message.content|safe }}
+                <!-- Export button for AI responses only -->
+                <div class="mt-2 text-end">
+                  <a href="{{ url_for('courses.export_message_pdf', course_id=course.id, chat_id=chat.id, message_id=message.id) }}" 
+                     class="btn btn-sm btn-outline-secondary" 
+                     title="Download as PDF">
+                    <i class="fas fa-file-pdf"></i> Export as PDF
+                  </a>
+                </div>
+              {% endif %}
+            </div>
+            <div class="small text-muted mt-1">
+              {% if message.role == 'user' %}
+                You
+              {% else %}
+                Assistant
+              {% endif %}
+              - {{ message.created_at.strftime('%Y-%m-%d %H:%M') }}
+            </div>
+          </div>
+        {% endfor %}
+      {% else %}
+        <div class="text-center text-muted py-5">
+          <i class="fas fa-comments fa-3x mb-3"></i>
+          <p>No messages yet. Start the conversation below!</p>
+        </div>
+      {% endif %}
+    </div>
+    
+    <form method="POST" action="{{ url_for('courses.send_message', course_id=course.id, chat_id=chat.id) }}" class="mt-3" id="chatForm">
+      <!-- Add CSRF token here -->
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="card-footer">
+        <div class="input-group">
+          <textarea name="message" class="form-control" placeholder="Type your message..." rows="2" required id="messageInput"></textarea>
+          <button type="submit" class="btn btn-primary" id="sendButton">
+            <i class="fas fa-paper-plane me-1"></i> Send
+          </button>
+        </div>
+        <div class="text-center mt-2 d-none" id="loadingIndicator">
+          <div class="spinner-border spinner-border-sm text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+          <span class="text-muted ms-2">AI is thinking...</span>
+        </div>
+        <div class="text-muted text-end mt-2">
+          <small>Press <kbd>Enter</kbd> to send, <kbd>Shift+Enter</kbd> for new line</small>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Auto-scroll to bottom of chat on page load
+    const chatContainer = document.getElementById('chat-messages');
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+    
+    // Add loading indicator when form is submitted
+    const chatForm = document.getElementById('chatForm');
+    const loadingIndicator = document.getElementById('loadingIndicator');
+    const sendButton = document.getElementById('sendButton');
+    const messageInput = document.getElementById('messageInput');
+    
+    if (chatForm && loadingIndicator && sendButton) {
+      chatForm.addEventListener('submit', function() {
+        // Disable the send button and show loading indicator
+        sendButton.disabled = true;
+        loadingIndicator.classList.remove('d-none');
+      });
+    }
+    
+    // Handle Enter key in message input
+    if (messageInput) {
+      messageInput.addEventListener('keydown', function(event) {
+        // Check if Enter key is pressed without Shift key
+        if (event.key === 'Enter' && !event.shiftKey) {
+          event.preventDefault(); // Prevent default action (newline)
+          
+          // Only submit if there's content
+          if (messageInput.value.trim().length > 0) {
+            chatForm.submit();
+          }
+        }
+      });
+    }
+  });
+</script>
+{% endblock %}

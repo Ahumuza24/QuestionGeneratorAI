@@ -1,0 +1,174 @@
+{% extends "base.html" %} {% block title %}Dashboard - AI Based Question
+Generation System {% endblock %} {% block content %}
+<div class="container py-4">
+  <div class="row mb-4">
+    <div class="col-md-12">
+      <h1 class="mb-4">Welcome, {{ user.username }}!</h1>
+      <p class="lead">
+        Manage your documents and generated questions from your dashboard.
+      </p>
+    </div>
+  </div>
+
+  <!-- Quick Stats -->
+  <div class="row mb-5">
+    <div class="col-md-3">
+      <div class="card text-center h-100">
+        <div class="card-body">
+          <h5 class="card-title">Documents</h5>
+          <p class="card-text display-4">{{ user.documents|length }}</p>
+          <a
+            href="{{ url_for('questions.list_documents') }}"
+            class="btn btn-primary"
+            >View Documents</a
+          >
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card text-center h-100">
+        <div class="card-body">
+          <h5 class="card-title">Questions</h5>
+          <p class="card-text display-4">{{ user.questions|length }}</p>
+          <a
+            href="{{ url_for('questions.list_documents') }}"
+            class="btn btn-primary"
+            >View Questions</a
+          >
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card text-center h-100">
+        <div class="card-body">
+          <h5 class="card-title">Courses</h5>
+          <p class="card-text display-4">{{ user.courses|default([])|length }}</p>
+          <a href="{{ url_for('courses.list_courses') }}" class="btn btn-primary">View Courses</a>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card text-center h-100">
+        <div class="card-body">
+          <h5 class="card-title">Account Age</h5>
+          <p class="card-text display-4">
+            {{ ((now - user.created_at).days)|default(0) }} days
+          </p>
+          <a href="{{ url_for('auth.profile') }}" class="btn btn-primary"
+            >View Profile</a
+          >
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Actions -->
+  <div class="row mb-5">
+    <div class="col-md-12">
+      <h2 class="mb-4">Quick Actions</h2>
+    </div>
+    <div class="col-md-6">
+      <div class="card mb-4">
+        <div class="card-body">
+          <h5 class="card-title">
+            <i class="fas fa-file-upload me-2"></i>Upload Document
+          </h5>
+          <p class="card-text">
+            Upload a new PDF or Word document to generate questions.
+          </p>
+          <a
+            href="{{ url_for('questions.upload_document') }}"
+            class="btn btn-primary"
+            >Upload Document</a
+          >
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="card mb-4">
+        <div class="card-body">
+          <h5 class="card-title">
+            <i class="fas fa-list me-2"></i>View Documents
+          </h5>
+          <p class="card-text">
+            View and manage your uploaded documents and generated questions.
+          </p>
+          <a
+            href="{{ url_for('questions.list_documents') }}"
+            class="btn btn-primary"
+            >View Documents</a
+          >
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Activity -->
+  <div class="row">
+    <div class="col-md-12">
+      <h2 class="mb-4">Recent Documents</h2>
+      {% if user.documents %}
+      <div class="table-responsive">
+        <table class="table table-hover">
+          <thead class="table-light">
+            <tr>
+              <th>Title</th>
+              <th>Type</th>
+              <th>Questions</th>
+              <th>Created</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <!-- ... existing code ... -->
+
+<tbody>
+    {% for document in user.documents|sort(attribute='created_at', reverse=True)|batch(5)|first|default([]) %}
+        <tr>
+            <td>{{ document.title or 'Untitled Document' }}</td>
+            <td>{{ document.question_type|title }}</td>
+            <td>{{ document.questions|length }}</td>
+            <td>{{ document.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+            <td>
+                <a href="{{ url_for('questions.view_document', document_id=document.id) }}" 
+                   class="btn btn-sm btn-primary">
+                    <i class="fas fa-eye me-1"></i>View
+                </a>
+                <a href="{{ url_for('questions.generate_questions_form', document_id=document.id) }}" 
+                   class="btn btn-sm btn-success">
+                    <i class="fas fa-sync me-1"></i>Regenerate
+                </a>
+            </td>
+        </tr>
+    {% endfor %}
+</tbody>
+        </table>
+      </div>
+      {% if user.documents|length > 5 %}
+      <div class="text-center mt-3">
+        <a
+          href="{{ url_for('questions.list_documents') }}"
+          class="btn btn-outline-primary"
+        >
+          <i class="fas fa-list me-2"></i>View All Documents
+        </a>
+      </div>
+      {% endif %} {% else %}
+      <div class="alert alert-info">
+        <p class="mb-0">
+          You haven't generated any questions yet. Use the form above to get
+          started!
+        </p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %} {% block scripts %}
+<script>
+  // Add current date for account age calculation
+  document.addEventListener("DOMContentLoaded", function () {
+    // This would be handled by the server-side template in a real app
+    // Just adding this as a placeholder
+  });
+</script>
+{% endblock %}

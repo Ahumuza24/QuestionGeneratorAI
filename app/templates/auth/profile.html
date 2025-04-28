@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block title %}Profile - AI Based Question Generation System {% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Profile Information</h4>
+                </div>
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        <i class="fas fa-user-circle fa-5x text-primary"></i>
+                    </div>
+                    <h5 class="card-title">{{ user.username }}</h5>
+                    <p class="card-text text-muted">{{ user.email }}</p>
+                    <p class="card-text">
+                        <small class="text-muted">Member since: {{ user.created_at.strftime('%B %d, %Y') }}</small>
+                    </p>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Account Statistics</h4>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            Documents
+                            <span class="badge bg-primary rounded-pill">{{ user.documents|length }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            Questions
+                            <span class="badge bg-primary rounded-pill">{{ user.questions|length }}</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Recent Activity</h4>
+                </div>
+                <div class="card-body">
+                    {% if user.documents %}
+                        <h5 class="card-title">Recent Documents</h5>
+                        <div class="list-group mb-4">
+                            {% for document in user.documents|sort(attribute='created_at', reverse=True) %}
+                                {% if loop.index <= 5 %}
+                                <a href="{{ url_for('questions.view_document', document_id=document.id) }}" class="list-group-item list-group-item-action">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h6 class="mb-1">{{ document.title }}</h6>
+                                        <small>{{ document.created_at.strftime('%Y-%m-%d') }}</small>
+                                    </div>
+                                    <p class="mb-1">{{ document.questions|length }} questions generated</p>
+                                    <small>{{ document.filename }}</small>
+                                </a>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                        {% if user.documents|length > 5 %}
+                            <div class="text-center">
+                                <a href="{{ url_for('questions.list_documents') }}" class="btn btn-outline-primary">View All Documents</a>
+                            </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="alert alert-info">
+                            <p class="mb-0">You haven't uploaded any documents yet. <a href="{{ url_for('questions.upload_document') }}">Upload your first document</a> to get started!</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 
