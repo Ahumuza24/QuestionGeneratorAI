@@ -11,6 +11,7 @@ from app.forms.course_forms import CourseForm, DocumentUploadForm, BatchUploadFo
 from werkzeug.utils import secure_filename
 from app.utils.document_processor import process_document
 import tempfile
+from bs4 import BeautifulSoup
 
 # Remove pdfkit import since we're using ReportLab instead
 # import pdfkit
@@ -491,22 +492,79 @@ def export_message_pdf(course_id, chat_id, message_id):
         pdf_path = tmp.name
     
     try:
-        # Use ReportLab to generate the PDF instead of pdfkit
+        # Import ReportLab components
         from reportlab.lib.pagesizes import A4
         from reportlab.lib import colors
         from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, ListFlowable, ListItem
         from reportlab.lib.enums import TA_CENTER, TA_LEFT
         from html import unescape
         import re
+        from bs4 import BeautifulSoup
         
-        # Create a function to clean HTML content
-        def clean_html(html_content):
-            # Remove HTML tags but keep the text
-            clean = re.compile('<.*?>')
-            text = re.sub(clean, '', html_content)
-            # Unescape HTML entities
-            return unescape(text)
+        # Function to parse HTML and convert to ReportLab flowables
+        def html_to_flowables(html_content, body_style, header_style):
+            soup = BeautifulSoup(html_content, 'html.parser')
+            flowables = []
+            
+            # Process all elements
+            for element in soup.children:
+                if element.name == 'p':
+                    flowables.append(Paragraph(element.get_text(), body_style))
+                    flowables.append(Spacer(1, 6))
+                    
+                elif element.name in ['h1', 'h2', 'h3', 'h4', 'h5', 'h6']:
+                    flowables.append(Spacer(1, 12))
+                    flowables.append(Paragraph(element.get_text(), header_style))
+                    flowables.append(Spacer(1, 6))
+                    
+                elif element.name == 'ul':
+                    items = []
+                    for li in element.find_all('li'):
+                        bullet_text = li.get_text().strip()
+                        items.append(ListItem(Paragraph(bullet_text, body_style)))
+                    flowables.append(ListFlowable(items, bulletType='bullet', start='•'))
+                    flowables.append(Spacer(1, 6))
+                    
+                elif element.name == 'ol':
+                    items = []
+                    for i, li in enumerate(element.find_all('li')):
+                        bullet_text = li.get_text().strip()
+                        items.append(ListItem(Paragraph(bullet_text, body_style)))
+                    flowables.append(ListFlowable(items, bulletType='bullet', start=1))
+                    flowables.append(Spacer(1, 6))
+                    
+                elif element.name == 'pre':
+                    code_style = ParagraphStyle(
+                        'Code',
+                        parent=body_style,
+                        fontName='Courier',
+                        fontSize=9,
+                        leftIndent=20,
+                        rightIndent=20,
+                        backColor=colors.lightgrey
+                    )
+                    code_text = element.get_text()
+                    flowables.append(Paragraph(code_text, code_style))
+                    flowables.append(Spacer(1, 6))
+                    
+                elif element.name == 'blockquote':
+                    quote_style = ParagraphStyle(
+                        'Quote',
+                        parent=body_style,
+                        leftIndent=30,
+                        rightIndent=30,
+                        italic=True
+                    )
+                    flowables.append(Paragraph(element.get_text(), quote_style))
+                    flowables.append(Spacer(1, 6))
+                    
+                elif element.string and element.string.strip():
+                    # Plain text nodes
+                    flowables.append(Paragraph(element.string.strip(), body_style))
+                    flowables.append(Spacer(1, 6))
+            
+            return flowables
         
         # Set up the document
         doc = SimpleDocTemplate(
@@ -521,9 +579,9 @@ def export_message_pdf(course_id, chat_id, message_id):
         # Get the sample stylesheet
         styles = getSampleStyleSheet()
         
-        # Create custom styles - use unique names to avoid conflicts
+        # Create custom styles with unique names
         title_style = ParagraphStyle(
-            name='ChatTitle',  # Changed from 'Title' to 'ChatTitle'
+            name='ChatTitle',
             parent=styles['Heading1'],
             alignment=TA_CENTER,
             fontSize=16,
@@ -531,31 +589,37 @@ def export_message_pdf(course_id, chat_id, message_id):
         )
         
         header_style = ParagraphStyle(
-            name='ChatHeader',  # Changed from 'Header' to 'ChatHeader'
+            name='ChatHeader',
             parent=styles['Heading2'],
             fontSize=14,
             textColor=colors.darkblue
         )
         
         question_style = ParagraphStyle(
-            name='ChatQuestionHeader',  # Changed from 'QuestionHeader' to 'ChatQuestionHeader'
+            name='ChatQuestionHeader',
             parent=styles['Heading3'],
             fontSize=12,
             textColor=colors.darkblue
         )
         
         body_style = ParagraphStyle(
-            name='ChatBodyText',  # Changed from 'BodyText' to 'ChatBodyText'
+            name='ChatBodyText',
             parent=styles['Normal'],
             fontSize=11,
             leading=14
         )
         
         footer_style = ParagraphStyle(
-            name='ChatFooter',  # Changed from 'Footer' to 'ChatFooter'
+            name='ChatFooter',
             parent=styles['Normal'],
             fontSize=9,
             textColor=colors.grey
+        )
+        
+        bold_style = ParagraphStyle(
+            name='ChatBoldText',
+            parent=body_style,
+            fontName='Helvetica-Bold'
         )
         
         # Prepare content
@@ -578,14 +642,8 @@ def export_message_pdf(course_id, chat_id, message_id):
         content.append(Paragraph("Response:", header_style))
         content.append(Spacer(1, 6))
         
-        # Clean HTML from the message content
-        clean_content = clean_html(message.content)
-        
-        # Split content by lines to handle formatting better
-        for line in clean_content.split('\n'):
-            if line.strip():  # Skip empty lines
-                content.append(Paragraph(line, body_style))
-                content.append(Spacer(1, 6))
+        # Parse the HTML content and convert to ReportLab flowables
+        content.extend(html_to_flowables(message.content, body_style, header_style))
         
         content.append(Spacer(1, 36))
         
